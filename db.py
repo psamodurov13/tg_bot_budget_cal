@@ -64,6 +64,22 @@ def sum_price(table_id, currency):
     cn.close()
     return result
 
+def operations_interval(table_id, interval):
+    cn = sq.connect(os.path.join('budget.db'))
+    cr = cn.cursor()
+    cr.execute(f'''SELECT 
+                operation_price, 
+                operation_currency, 
+                operation_name, 
+                operation_group, 
+                operation_date 
+                FROM "{table_id}"
+                WHERE operation_date BETWEEN "{interval[0]}" and "{interval[1]}"''')
+    result = cr.fetchall()
+    print(f'{result}')
+    cn.close()
+    return result
+
 def count(table_id):
     cn = sq.connect(os.path.join('budget.db'))
     cr = cn.cursor()

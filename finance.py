@@ -25,7 +25,10 @@ def show_all_groups(chat_id):
 
 # Функция вывода всех операций
 def show_operations(chat_id, count_offset=0):
-    result_show_operations = 'Все операции: \n'
+    if count_offset == 0:
+        result_show_operations = 'Последние 5 операций: \n'
+    else:
+        result_show_operations = ''
     operations_db = db.fetchall(chat_id, offset=count_offset)
     for i in operations_db:
         result_show_operations += f"{i[0]} {i[1]} - {i[2]} / {i[3]} ({i[4]})\n"
@@ -41,6 +44,19 @@ def show_all_price(chat_id):
         result_show_all_price += f"{sum_cur} {currency} \n"
     print(result_show_all_price)
     return result_show_all_price
+
+# Функция вывода операций определенного интервала
+def show_operations_interval(chat_id, interval):
+    result = f'Операции с {interval[0]} по {interval[1]}: \n'
+    operations_interval_list = db.operations_interval(chat_id, interval)
+    if len(operations_interval_list) == 0:
+        result = 'В этом периоде операций не было'
+    else:
+        print(operations_interval_list)
+        for i in operations_interval_list:
+            result += f"{i[0]} {i[1]} - {i[2]} / {i[3]} ({i[4]})\n"
+        print(result)
+    return result
 
 # Функция конвертации во все валюты
 def convert_to_one(chat_id, choice_currency):
