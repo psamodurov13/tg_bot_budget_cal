@@ -89,3 +89,18 @@ def count(table_id):
     print(result)
     cn.close()
     return result
+
+def delete(table_id, operation):
+    cn = sq.connect(os.path.join('budget.db'))
+    cr = cn.cursor()
+    cr.execute(f'''DELETE FROM "{table_id}"
+                   WHERE operation_price = "{operation[0]}" AND 
+                   operation_currency = "{operation[1]}" AND 
+                   operation_name = "{operation[2]}" AND
+                   operation_group = "{operation[3]}" AND
+                   operation_date = "{operation[4]}"''')
+    result = cr.fetchall()
+    print(result)
+    cn.commit()
+    cn.close()
+    return f'Запись {operation} удалена'

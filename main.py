@@ -79,7 +79,6 @@ def start_message(message):
                    reply_markup=keyboard_main)
 
 
-
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message):
     mt = message.text.lower()
@@ -88,6 +87,10 @@ def get_text_messages(message):
                          reply_markup=keyboard_main)
     elif mt == '/help':
         bot.send_message(message.from_user.id, 'Напиши привет')
+    elif mt[:4] == '/del':
+        bot.send_message(message.from_user.id, f'Удалить {finance.del_operations[int(message.text[4:])]}')
+        bot.send_message(message.from_user.id, db.delete(message.chat.id,
+                                                         finance.del_operations[int(message.text[4:])]))
     else:
         bot.send_message(message.from_user.id, 'Я тебя не  понимаю, напиши /help ')
         unknown.append(message.text)
@@ -233,7 +236,7 @@ def callback_worker(call):
         msg = finance.show_operations(call.message.chat.id, count_offset)
         bot.send_message(call.message.chat.id, msg)
         count_offset += 5
-        if count_offset <= int(*db.count(call.message.chat.id)):
+        if count_offset < int(*db.count(call.message.chat.id)):
             show_operations_menu(call.message.chat.id)
         else:
             bot.send_message(call.message.chat.id, 'Больше записей нет')
@@ -302,13 +305,13 @@ def callback_worker(call):
         operation_date = date.today()
         print(operation_date)
         new_exe['operation_date'] = operation_date
-        create_finance(call.message)
+        create_finance(call.message.chat.id)
 
     if call.data == 'yesterday':
         operation_date = date.today() - timedelta(days=1)
         print(operation_date)
         new_exe['operation_date'] = operation_date
-        create_finance(call.message)
+        create_finance(call.message.chat.id)
 
     if call.data == 'other_date':
         callendar_param = 'new_op'

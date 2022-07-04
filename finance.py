@@ -3,7 +3,7 @@ from forex_python.converter import CurrencyRates
 import requests
 import db
 
-expense_book_file = 'info.data'
+del_operations = []
 
 # Функция вывода всех операций определенной группы
 def show_group(chat_id, search_group):
@@ -25,13 +25,15 @@ def show_all_groups(chat_id):
 
 # Функция вывода всех операций
 def show_operations(chat_id, count_offset=0):
+    global del_operations
     if count_offset == 0:
         result_show_operations = 'Последние 5 операций: \n'
     else:
         result_show_operations = ''
     operations_db = db.fetchall(chat_id, offset=count_offset)
     for i in operations_db:
-        result_show_operations += f"{i[0]} {i[1]} - {i[2]} / {i[3]} ({i[4]})\n"
+        result_show_operations += f"{i[0]} {i[1]} - {i[2]} / {i[3]} ({i[4]}) /del{operations_db.index(i)} \n"
+    del_operations = operations_db
     return result_show_operations
 
 # Функция вывода суммы всех операций
@@ -47,6 +49,7 @@ def show_all_price(chat_id):
 
 # Функция вывода операций определенного интервала
 def show_operations_interval(chat_id, interval):
+    global del_operations
     result = f'Операции с {interval[0]} по {interval[1]}: \n'
     operations_interval_list = db.operations_interval(chat_id, interval)
     if len(operations_interval_list) == 0:
@@ -54,8 +57,9 @@ def show_operations_interval(chat_id, interval):
     else:
         print(operations_interval_list)
         for i in operations_interval_list:
-            result += f"{i[0]} {i[1]} - {i[2]} / {i[3]} ({i[4]})\n"
+            result += f"{i[0]} {i[1]} - {i[2]} / {i[3]} ({i[4]}) /del{operations_interval_list.index(i)} \n"
         print(result)
+    del_operations = operations_interval_list
     return result
 
 # Функция конвертации во все валюты
