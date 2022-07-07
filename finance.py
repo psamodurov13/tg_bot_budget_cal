@@ -1,19 +1,19 @@
-import pickle
 from forex_python.converter import CurrencyRates
 import requests
 import db
 
 del_operations = []
 
+
 # Функция вывода всех операций определенной группы
 def show_group(chat_id, search_group):
     result_show_group = f'Все расходы по статье - {search_group} \n'
     group_operations_db = db.fetchall(chat_id, f'WHERE operation_group = "{search_group}"')
-    print(group_operations_db)
     for i in group_operations_db:
         if i[3] == search_group:
             result_show_group += f"{i[0]} {i[1]} - {i[2]} ({i[4]})\n"
     return result_show_group
+
 
 # Функция вывода всех групп
 def show_all_groups(chat_id):
@@ -22,6 +22,7 @@ def show_all_groups(chat_id):
     for i in groups_db:
         result_show_all_groups += str(*i) + '\n'
     return result_show_all_groups
+
 
 # Функция вывода всех операций
 def show_operations(chat_id, count_offset=0):
@@ -36,16 +37,16 @@ def show_operations(chat_id, count_offset=0):
     del_operations = operations_db
     return result_show_operations
 
+
 # Функция вывода суммы всех операций
 def show_all_price(chat_id):
     result_show_all_price = 'Всего потрачено: \n'
     currency_db = [str(*i) for i in db.fetch_unique_param(chat_id, 'operation_currency')]
-    print(currency_db)
     for currency in currency_db:
         sum_cur = str(*db.sum_price(chat_id, currency))
         result_show_all_price += f"{sum_cur} {currency} \n"
-    print(result_show_all_price)
     return result_show_all_price
+
 
 # Функция вывода операций определенного интервала
 def show_operations_interval(chat_id, interval):
@@ -55,23 +56,20 @@ def show_operations_interval(chat_id, interval):
     if len(operations_interval_list) == 0:
         result = 'В этом периоде операций не было'
     else:
-        print(operations_interval_list)
         for i in operations_interval_list:
             result += f"{i[0]} {i[1]} - {i[2]} / {i[3]} ({i[4]}) /del{operations_interval_list.index(i)} \n"
-        print(result)
     del_operations = operations_interval_list
     return result
+
 
 # Функция конвертации во все валюты
 def convert_to_one(chat_id, choice_currency):
     currency_db = [str(*i) for i in db.fetch_unique_param(chat_id, 'operation_currency')]
-    print('currencies ', currency_db)
     result = 0
     convert = CurrencyRates()
     data = requests.get('https://www.cbr-xml-daily.ru/daily_json.js').json()
     for index in range(len(currency_db)):
         sum_cur = str(*db.sum_price(chat_id, currency_db[index]))
-        print(sum_cur)
         if currency_db[index] == choice_currency:
             result += int(sum_cur)
         else:
@@ -84,5 +82,4 @@ def convert_to_one(chat_id, choice_currency):
                               data['Valute'][choice_currency]['Nominal']
                 else:
                     result += convert.convert(currency_db[index], choice_currency, int(sum_cur))
-    print(result, ' ', choice_currency)
     return result

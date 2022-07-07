@@ -4,6 +4,9 @@ from telebot import types
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from datetime import date, timedelta
 import db
+from loguru import logger
+
+logger.add('debug.log', format='{time} {level} {message}', level='DEBUG', rotation='10 KB', compression='zip')
 
 bot = telebot.TeleBot('5502805436:AAF83iukDBx0h4XXaeVLesFduwsxOFbETNw')
 
@@ -75,45 +78,64 @@ keyboard_calendar.add(key_to_main)
 
 @bot.message_handler(commands=['start'])
 def start_message(message):
-    bot.send_message(message.chat.id, "Привет. Я помогу вести книгу учета расходов и заполнять календарь",
-                   reply_markup=keyboard_main)
+    bot.send_message(message.chat.id,
+                     "Привет. Я помогу вести книгу учета расходов и заполнять календарь", reply_markup=keyboard_main)
 
 
 @bot.message_handler(content_types=['text'])
+@logger.catch
 def get_text_messages(message):
     mt = message.text.lower()
     if mt == 'привет':
         bot.send_message(message.from_user.id, 'Привет. Я помогу вести книгу учета расходов и заполнять календарь',
                          reply_markup=keyboard_main)
     elif mt == '/help':
-        bot.send_message(message.from_user.id, 'Напиши привет')
+        bot.send_message(message.from_user.id, 'Для начала напиши "привет" или выбери один из пунктов меню. Я могу'
+                                               'добавлять расходы и удалять добавленные записи, показывать статьи '
+                                               'расходов, показывать операции по каждой статье расходов, считать '
+                                               'количество потраченных денег в разной валюте. Для быстрого добавления '
+                                               'новой операции напишите мне сообщение "100, rub, товар, статья '
+                                               'расходов"')
     elif mt[:4] == '/del':
         bot.send_message(message.from_user.id, f'Удалить {finance.del_operations[int(message.text[4:])]}')
         bot.send_message(message.from_user.id, db.delete(message.chat.id,
                                                          finance.del_operations[int(message.text[4:])]))
+    elif mt[0].isdigit():
+        global new_exe
+        global operation_date
+        parse = mt.split(', ')
+        parse[0] = int(parse[0])
+        parse[1] = parse[1].upper()
+        operation_date = date.today()
+        new_exe = dict(zip(['operation_price', 'operation_currency',
+                            'operation_name', 'operation_group'], parse))
+        if len(new_exe) == 4:
+            create_finance(message.from_user.id)
+        else:
+            bot.send_message(message.from_user.id, 'Возникла ошибка', reply_markup=keyboard_main)
     else:
         bot.send_message(message.from_user.id, 'Я тебя не  понимаю, напиши /help ')
         unknown.append(message.text)
 
 
 # Функции сбора информации для добавления новой операции
+@logger.catch
 def add_operation(chat_id):
     # Ввод суммы новой операции
     message = bot.send_message(chat_id, 'Введите сумму.')
     bot.register_next_step_handler(message, add_operation_currency)
-    print(message)
 
 
+@logger.catch
 def add_operation_currency(message):
     # Ввод валюты новой операции
     global new_exe
-    new_exe = {}
-    new_exe['operation_price'] = int(message.text)
+    new_exe = {'operation_price': float(message.text)}
     bot.send_message(message.from_user.id, 'Введите валюту.')
     bot.register_next_step_handler(message, add_operation_name)
-    print(message)
 
 
+@logger.catch
 def add_operation_name(message):
     # Ввод названия операции
     new_exe['operation_currency'] = message.text
@@ -121,6 +143,7 @@ def add_operation_name(message):
     bot.register_next_step_handler(message, add_operation_group)
 
 
+@logger.catch
 def add_operation_group(message):
     # Ввод статьи расходов
     new_exe['operation_name'] = message.text
@@ -128,12 +151,14 @@ def add_operation_group(message):
     bot.register_next_step_handler(message, add_operation_date)
 
 
+@logger.catch
 def add_operation_date(message):
     # Ввод даты операции
     new_exe['operation_group'] = message.text
     bot.send_message(message.from_user.id, 'Когда была совершена операция:', reply_markup=keyboard_operation_date)
 
 
+@logger.catch
 def start_callendar(chat_id):
     # Построение календаря
     calendar, step = DetailedTelegramCalendar().build()
@@ -142,6 +167,7 @@ def start_callendar(chat_id):
                      reply_markup=calendar)
 
 
+@logger.catch
 @bot.callback_query_handler(func=DetailedTelegramCalendar.func())
 def cal(c):
     # Ввод даты полностью
@@ -160,7 +186,6 @@ def cal(c):
                               c.message.message_id)
         if callendar_param == 'new_op':
             operation_date = result
-            print(operation_date)
             create_finance(c.message.chat.id)
             callendar_param = ''
             operation_date = ''
@@ -168,26 +193,24 @@ def cal(c):
             if len(interval) == 0:
                 interval.append(result)
                 start_callendar(c.message.chat.id)
-                print(interval)
             elif len(interval) == 1:
                 interval.append(result)
-                print(interval)
                 bot.send_message(c.message.chat.id, finance.show_operations_interval(c.message.chat.id, interval))
                 show_operations_menu_without_next(c.message.chat.id)
                 interval = []
                 callendar_param = ''
 
 
-
+@logger.catch
 def create_finance(chat_id):
     # Создание операции
     new_exe['operation_date'] = operation_date
     bot.send_message(chat_id, f'Операция добавлена: '
-                                      f'{new_exe["operation_price"]} '
-                                      f'{new_exe["operation_currency"]} - '
-                                      f'{new_exe["operation_name"]} / '
-                                      f'{new_exe["operation_group"]} '
-                                      f'{new_exe["operation_date"]} \n')
+                              f'{new_exe["operation_price"]} '
+                              f'{new_exe["operation_currency"]} - '
+                              f'{new_exe["operation_name"]} / '
+                              f'{new_exe["operation_group"]} '
+                              f'{new_exe["operation_date"]} \n')
     db.insert(chat_id, new_exe)
     msg = 'Данные сохранены.'
     bot.send_message(chat_id, msg)
@@ -196,23 +219,31 @@ def create_finance(chat_id):
     callendar_param = ''
 
 
+@logger.catch
 def budget_menu(chat_id):
     # Меню пункта "бюджет"
     bot.send_message(chat_id, 'Что вы хотите сделать?', reply_markup=keyboard)
 
+
+@logger.catch
 def show_operations_menu(chat_id):
     # Меню пункта "просмотр операций"
     bot.send_message(chat_id, 'Что дальше?', reply_markup=keyboard_operations_interval)
 
+
+@logger.catch
 def show_operations_menu_without_next(chat_id):
     # Меню пункта "просмотр операций"
     bot.send_message(chat_id, 'Что дальше?', reply_markup=keyboard_operations_interval_wo_next)
 
+
 # Обработчик нажатий на кнопки
+@logger.catch
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
     global operation_date
     global callendar_param
+    global count_offset
     if call.data == 'budget':
         budget_menu(call.message.chat.id)
 
@@ -224,13 +255,11 @@ def callback_worker(call):
 
     # Если нажали на кнопку показать операции
     if call.data == 'show_operations':
-        global count_offset
         msg = finance.show_operations(call.message.chat.id)
         # Отправляем текст в Телеграм
         bot.send_message(call.message.chat.id, msg)
         show_operations_menu(call.message.chat.id)
         count_offset = 5
-
 
     if call.data == 'next':
         msg = finance.show_operations(call.message.chat.id, count_offset)
@@ -246,7 +275,6 @@ def callback_worker(call):
     if call.data == 'interval':
         callendar_param = 'interv'
         start_callendar(call.message.chat.id)
-
 
     if call.data == 'show_all_groups':
         msg = finance.show_all_groups(call.message.chat.id)
@@ -284,7 +312,7 @@ def callback_worker(call):
         currency_db = [str(*i) for i in db.fetch_unique_param(call.message.chat.id, 'operation_currency')]
         for i in currency_db:
             keyboard_choice_currency.add(types.InlineKeyboardButton(text=str(i),
-                                                               callback_data=str('choice_curr_' + str(i))))
+                                                                    callback_data=str('choice_curr_' + str(i))))
         # Отправляем текст и кнопки групп в Телеграм
         bot.send_message(call.message.chat.id, 'В какой валюте показать общий расход?',
                          reply_markup=keyboard_choice_currency)
@@ -316,8 +344,6 @@ def callback_worker(call):
     if call.data == 'other_date':
         callendar_param = 'new_op'
         start_callendar(call.message.chat.id)
-
-
 
 
 bot.polling(none_stop=True, interval=0)
