@@ -1,0 +1,74 @@
+2022-07-16T01:24:57.367270+0300 ERROR An error has been caught in function 'run', process 'MainProcess' (5150), thread 'WorkerThread1' (123145565978624):
+Traceback (most recent call last):
+
+  File "/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/threading.py", line 890, in _bootstrap
+    self._bootstrap_inner()
+    │    └ <function Thread._bootstrap_inner at 0x7fad272895e0>
+    └ <WorkerThread(WorkerThread1, started daemon 123145565978624)>
+  File "/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/threading.py", line 932, in _bootstrap_inner
+    self.run()
+    │    └ <function WorkerThread.run at 0x7fad273e9dc0>
+    └ <WorkerThread(WorkerThread1, started daemon 123145565978624)>
+> File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/venv/lib/python3.8/site-packages/telebot/util.py", line 89, in run
+    task(*args, **kwargs)
+    │     │       └ {}
+    │     └ (<telebot.types.Message object at 0x7fad27c730a0>,)
+    └ <function get_text_messages at 0x7fad27c52e50>
+
+  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/main.py", line 97, in get_text_messages
+    finance.send_excel(message.from_user.id)
+    │       │          │       │         └ 720023902
+    │       │          │       └ <telebot.types.User object at 0x7fad27c73fa0>
+    │       │          └ <telebot.types.Message object at 0x7fad27c730a0>
+    │       └ <function send_excel at 0x7fad27a62a60>
+    └ <module 'finance' from '/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/finance.py'>
+
+  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/finance.py", line 97, in send_excel
+    all_op = db.fetchall(chat_id, offset=0, limit=None)
+             │  │        └ 720023902
+             │  └ <function fetchall at 0x7fad27914940>
+             └ <module 'db' from '/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/db.py'>
+
+  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/db.py", line 32, in fetchall
+    cr.execute(f'''SELECT
+    │  └ <method 'execute' of 'sqlite3.Cursor' objects>
+    └ <sqlite3.Cursor object at 0x7fad27c74650>
+
+sqlite3.OperationalError: no such column: None
+2022-07-16T01:28:59.867773+0300 ERROR An error has been caught in function 'run', process 'MainProcess' (5187), thread 'WorkerThread2' (123145360461824):
+Traceback (most recent call last):
+
+  File "/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/threading.py", line 890, in _bootstrap
+    self._bootstrap_inner()
+    │    └ <function Thread._bootstrap_inner at 0x7faee0d895e0>
+    └ <WorkerThread(WorkerThread2, started daemon 123145360461824)>
+  File "/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/threading.py", line 932, in _bootstrap_inner
+    self.run()
+    │    └ <function WorkerThread.run at 0x7faee280fdc0>
+    └ <WorkerThread(WorkerThread2, started daemon 123145360461824)>
+> File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/venv/lib/python3.8/site-packages/telebot/util.py", line 89, in run
+    task(*args, **kwargs)
+    │     │       └ {}
+    │     └ (<telebot.types.Message object at 0x7faee42a70a0>,)
+    └ <function get_text_messages at 0x7faee4285e50>
+
+  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/main.py", line 97, in get_text_messages
+    finance.send_excel(message.from_user.id)
+    │       │          │       │         └ 720023902
+    │       │          │       └ <telebot.types.User object at 0x7faee42a7fa0>
+    │       │          └ <telebot.types.Message object at 0x7faee42a70a0>
+    │       └ <function send_excel at 0x7faee2f87a60>
+    └ <module 'finance' from '/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/finance.py'>
+
+  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/finance.py", line 97, in send_excel
+    all_op = db.fetchall(chat_id, offset=0, limit='')
+             │  │        └ 720023902
+             │  └ <function fetchall at 0x7faee2e3b940>
+             └ <module 'db' from '/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/db.py'>
+
+  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/db.py", line 32, in fetchall
+    cr.execute(f'''SELECT
+    │  └ <method 'execute' of 'sqlite3.Cursor' objects>
+    └ <sqlite3.Cursor object at 0x7faee42a86c0>
+
+sqlite3.OperationalError: near "OFFSET": syntax error

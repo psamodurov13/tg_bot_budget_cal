@@ -13,6 +13,8 @@ def insert(table_id, dict_new):
                 operation_name VARCHAR(255), 
                 operation_group VARCHAR(255),
                 operation_date DATE) ''')
+    cr.execute(f'''INSERT OR IGNORE INTO users  
+                   (user) VALUES ({table_id}) ''')
     columns = ', '.join([i for i in dict_new.keys()])
     values = [i for i in dict_new.values()]
     placeholders = ', '.join('?' * len(dict_new.keys()))
@@ -24,7 +26,7 @@ def insert(table_id, dict_new):
     cn.close()
 
 
-def fetchall(table_id, param='', offset=0):
+def fetchall(table_id, param='', offset='OFFSET 0', limit='LIMIT 5'):
     cn = sq.connect(os.path.join('budget.db'))
     cr = cn.cursor()
     cr.execute(f'''SELECT 
@@ -32,12 +34,13 @@ def fetchall(table_id, param='', offset=0):
                 operation_currency, 
                 operation_name, 
                 operation_group, 
-                operation_date 
+                operation_date, 
+                operation_id 
                 FROM "{table_id}"
                 {param}
                 ORDER BY operation_date DESC
-                LIMIT 5
-                OFFSET {offset}''')
+                {limit} 
+                {offset}''')
     result = cr.fetchall()
     cn.close()
     return result
@@ -72,9 +75,10 @@ def operations_interval(table_id, interval):
                 operation_currency, 
                 operation_name, 
                 operation_group, 
-                operation_date 
+                operation_date,
+                operation_id 
                 FROM "{table_id}"
-                WHERE operation_date BETWEEN "{interval[0]}" and "{interval[1]}"''')
+                WHERE operation_date BETWEEN "{interval['start']}" and "{interval['end']}"''')
     result = cr.fetchall()
     cn.close()
     return result
@@ -93,12 +97,32 @@ def count(table_id):
 def delete(table_id, operation):
     cn = sq.connect(os.path.join('budget.db'))
     cr = cn.cursor()
+    print(operation[5])
     cr.execute(f'''DELETE FROM "{table_id}"
-                   WHERE operation_price = "{operation[0]}" AND 
-                   operation_currency = "{operation[1]}" AND 
-                   operation_name = "{operation[2]}" AND
-                   operation_group = "{operation[3]}" AND
-                   operation_date = "{operation[4]}"''')
+                   WHERE operation_id = "{operation[5]}"''')
     cn.commit()
     cn.close()
     return f'Запись {operation} удалена'
+
+
+def update_param(user_id, param, value):
+    cn = sq.connect(os.path.join('budget.db'))
+    cr = cn.cursor()
+    cr.execute(f'''UPDATE users 
+                   SET {param} = "{value}"
+                   WHERE user = "{user_id}"''')
+    cn.commit()
+    cn.close()
+    return f'{param} обновлен в БД'
+
+
+def fetch_param(user_id, param):
+    cn = sq.connect(os.path.join('budget.db'))
+    cr = cn.cursor()
+    cr.execute(f'''SELECT {param} FROM users 
+                   WHERE user = "{user_id}"''')
+    result = cr.fetchone()[0]
+    print(result)
+    cn.close()
+    return result
+

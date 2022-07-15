@@ -1,6 +1,8 @@
 from forex_python.converter import CurrencyRates
 import requests
 import db
+import json
+import xlsxwriter
 
 del_operations = []
 
@@ -26,17 +28,21 @@ def show_all_groups(chat_id):
 
 # Функция вывода всех операций
 def show_operations(chat_id, count_offset=0):
-    global del_operations
     if count_offset == 0:
         result_show_operations = 'Последние 5 операций: \n'
     else:
         result_show_operations = ''
-    operations_db = db.fetchall(chat_id, offset=count_offset)
-    for i in operations_db:
-        result_show_operations += f"{i[0]} {i[1]} - {i[2]} / {i[3]} ({i[4]}) /del{operations_db.index(i)} \n"
-    del_operations = operations_db
-    return result_show_operations
+    return result_show_operations + find_operations(chat_id, count_offset)[1]
 
+
+def find_operations(chat_id, count_offset):
+    operations_db = db.fetchall(chat_id, offset=f'OFFSET {count_offset}')
+    finded_operations = ''
+    for i in operations_db:
+        finded_operations += f"{i[0]} {i[1]} - {i[2]} / {i[3]} ({i[4]}) /del{operations_db.index(i)} \n"
+    print(operations_db)
+    db.update_param(chat_id, 'del_operations', operations_db)
+    return [operations_db, finded_operations]
 
 # Функция вывода суммы всех операций
 def show_all_price(chat_id):
@@ -50,15 +56,14 @@ def show_all_price(chat_id):
 
 # Функция вывода операций определенного интервала
 def show_operations_interval(chat_id, interval):
-    global del_operations
-    result = f'Операции с {interval[0]} по {interval[1]}: \n'
+    result = f'Операции с {interval["start"]} по {interval["end"]}: \n'
     operations_interval_list = db.operations_interval(chat_id, interval)
     if len(operations_interval_list) == 0:
         result = 'В этом периоде операций не было'
     else:
         for i in operations_interval_list:
             result += f"{i[0]} {i[1]} - {i[2]} / {i[3]} ({i[4]}) /del{operations_interval_list.index(i)} \n"
-    del_operations = operations_interval_list
+    db.update_param(chat_id, 'del_operations', operations_interval_list)
     return result
 
 
@@ -83,3 +88,24 @@ def convert_to_one(chat_id, choice_currency):
                 else:
                     result += convert.convert(currency_db[index], choice_currency, int(sum_cur))
     return result
+
+
+def send_excel(chat_id, groups_list='', limit=5):
+    if groups_list:
+        ...
+    else:
+        all_op = [('цена', 'валюта', 'назначение', 'статья', 'дата', 'id')] + db.fetchall(chat_id, offset='', limit='')
+        print(all_op)
+
+        # Create a workbook and add a worksheet.
+        file_name = f'budget-{chat_id}.xlsx'
+        workbook = xlsxwriter.Workbook(file_name)
+        worksheet = workbook.add_worksheet() # Some data we want to write to the worksheet.
+
+        # data = [(123, 'enalapril'), (456, 'atenolol'), (789, 'lovastatin')] # Iterate over the data and write it out row by row.
+        for row, line in enumerate(all_op):
+            for col, cell in enumerate(line):
+                worksheet.write(row, col, cell)
+        workbook.close()
+    return file_name
+

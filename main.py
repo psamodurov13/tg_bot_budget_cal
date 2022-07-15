@@ -5,17 +5,14 @@ from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from datetime import date, timedelta
 import db
 from loguru import logger
+import json
+import ast
 
 logger.add('debug.log', format='{time} {level} {message}', level='DEBUG', rotation='10 KB', compression='zip')
 
 bot = telebot.TeleBot('5502805436:AAF83iukDBx0h4XXaeVLesFduwsxOFbETNw')
 
 unknown = []
-operation_date = ''
-new_exe = {}
-count_offset = 0
-callendar_param = ''
-interval = []
 
 # Общая кнопка возврата в главное меню
 keyboard_to_main = types.InlineKeyboardMarkup()
@@ -96,19 +93,24 @@ def get_text_messages(message):
                                                'количество потраченных денег в разной валюте. Для быстрого добавления '
                                                'новой операции напишите мне сообщение "100, rub, товар, статья '
                                                'расходов"')
+    elif mt == 'скачать':
+        file_name = finance.send_excel(message.from_user.id)
+        bot.send_document(message.from_user.id, document=open(file_name, 'rb'))
     elif mt[:4] == '/del':
-        bot.send_message(message.from_user.id, f'Удалить {finance.del_operations[int(message.text[4:])]}')
+        del_operations = ast.literal_eval(db.fetch_param(message.chat.id, 'del_operations'))
+        print(del_operations)
+        print(type(del_operations))
         bot.send_message(message.from_user.id, db.delete(message.chat.id,
-                                                         finance.del_operations[int(message.text[4:])]))
+                                                         del_operations[int(message.text[4:])]),
+                         reply_markup=keyboard)
     elif mt[0].isdigit():
-        global new_exe
-        global operation_date
         parse = mt.split(', ')
         parse[0] = int(parse[0])
         parse[1] = parse[1].upper()
-        operation_date = date.today()
+        db.update_param(message.from_user.id, 'operation_date', date.today())
         new_exe = dict(zip(['operation_price', 'operation_currency',
                             'operation_name', 'operation_group'], parse))
+        db.update_param(message.from_user.id, 'new_exe', new_exe)
         if len(new_exe) == 4:
             create_finance(message.from_user.id)
         else:
@@ -122,39 +124,45 @@ def get_text_messages(message):
 @logger.catch
 def add_operation(chat_id):
     # Ввод суммы новой операции
-    message = bot.send_message(chat_id, 'Введите сумму.')
+    message = bot.send_message(chat_id, 'Введите сумму.', reply_markup=keyboard_to_main)
+
     bot.register_next_step_handler(message, add_operation_currency)
+
 
 
 @logger.catch
 def add_operation_currency(message):
-    # Ввод валюты новой операции
-    global new_exe
-    new_exe = {'operation_price': float(message.text)}
-    bot.send_message(message.from_user.id, 'Введите валюту.')
-    bot.register_next_step_handler(message, add_operation_name)
+    if message.text.isdigit():
+        # Ввод валюты новой операции
+        new_exe = {'operation_price': float(message.text)}
+        bot.send_message(message.from_user.id, 'Введите валюту.')
+        bot.register_next_step_handler(message, add_operation_name, new_exe)
+    else:
+        bot.send_message(message.from_user.id, 'Возникла ошибка')
+        to_main(message.from_user.id)
 
 
 @logger.catch
-def add_operation_name(message):
+def add_operation_name(message, new_exe):
     # Ввод названия операции
     new_exe['operation_currency'] = message.text
     bot.send_message(message.from_user.id, 'Введите товар.')
-    bot.register_next_step_handler(message, add_operation_group)
+    bot.register_next_step_handler(message, add_operation_group, new_exe)
 
 
 @logger.catch
-def add_operation_group(message):
+def add_operation_group(message, new_exe):
     # Ввод статьи расходов
     new_exe['operation_name'] = message.text
     bot.send_message(message.from_user.id, 'Введите статью расходов.')
-    bot.register_next_step_handler(message, add_operation_date)
+    bot.register_next_step_handler(message, add_operation_date, new_exe)
 
 
 @logger.catch
-def add_operation_date(message):
+def add_operation_date(message, new_exe):
     # Ввод даты операции
     new_exe['operation_group'] = message.text
+    db.update_param(message.from_user.id, 'new_exe', new_exe)
     bot.send_message(message.from_user.id, 'Когда была совершена операция:', reply_markup=keyboard_operation_date)
 
 
@@ -172,9 +180,10 @@ def start_callendar(chat_id):
 def cal(c):
     # Ввод даты полностью
     result, key, step = DetailedTelegramCalendar().process(c.data)
-    global operation_date
-    global interval
-    global callendar_param
+    interval = json.loads(db.fetch_param(c.message.chat.id, 'interval').replace('\'', '"'))
+    print(interval)
+    print(type(interval))
+    callendar_param = db.fetch_param(c.message.chat.id, 'callendar_param')
     if not result and key:
         bot.edit_message_text(f"Выберите {LSTEP[step]}",
                               c.message.chat.id,
@@ -185,26 +194,29 @@ def cal(c):
                               c.message.chat.id,
                               c.message.message_id)
         if callendar_param == 'new_op':
-            operation_date = result
+            op_date = result
+            db.update_param(c.message.chat.id, 'operation_date', op_date)
             create_finance(c.message.chat.id)
-            callendar_param = ''
-            operation_date = ''
+            db.update_param(c.message.chat.id, 'callendar_param', '')
         if callendar_param == 'interv':
             if len(interval) == 0:
-                interval.append(result)
+                interval['start'] = str(result)
+                db.update_param(c.message.chat.id, 'interval', interval)
                 start_callendar(c.message.chat.id)
             elif len(interval) == 1:
-                interval.append(result)
+                interval['end'] = str(result)
                 bot.send_message(c.message.chat.id, finance.show_operations_interval(c.message.chat.id, interval))
                 show_operations_menu_without_next(c.message.chat.id)
-                interval = []
-                callendar_param = ''
+                interval = {}
+                db.update_param(c.message.chat.id, 'interval', interval)
+                db.update_param(c.message.chat.id, 'callendar_param', '')
 
 
 @logger.catch
 def create_finance(chat_id):
     # Создание операции
-    new_exe['operation_date'] = operation_date
+    new_exe = json.loads(db.fetch_param(chat_id, 'new_exe').replace('\'', '"'))
+    new_exe['operation_date'] = db.fetch_param(chat_id, 'operation_date')
     bot.send_message(chat_id, f'Операция добавлена: '
                               f'{new_exe["operation_price"]} '
                               f'{new_exe["operation_currency"]} - '
@@ -215,8 +227,8 @@ def create_finance(chat_id):
     msg = 'Данные сохранены.'
     bot.send_message(chat_id, msg)
     budget_menu(chat_id)
-    global callendar_param
-    callendar_param = ''
+    db.update_param(chat_id, 'operation_date', '')
+    db.update_param(chat_id, 'callendar_param', '')
 
 
 @logger.catch
@@ -236,14 +248,17 @@ def show_operations_menu_without_next(chat_id):
     # Меню пункта "просмотр операций"
     bot.send_message(chat_id, 'Что дальше?', reply_markup=keyboard_operations_interval_wo_next)
 
+@logger.catch
+def to_main(chat_id):
+    bot.send_message(chat_id, 'Выбери нужный раздел',
+                     reply_markup=keyboard_main)
+    db.update_param(chat_id, 'count_offset', 0)
+
 
 # Обработчик нажатий на кнопки
 @logger.catch
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
-    global operation_date
-    global callendar_param
-    global count_offset
     if call.data == 'budget':
         budget_menu(call.message.chat.id)
 
@@ -259,21 +274,22 @@ def callback_worker(call):
         # Отправляем текст в Телеграм
         bot.send_message(call.message.chat.id, msg)
         show_operations_menu(call.message.chat.id)
-        count_offset = 5
 
     if call.data == 'next':
-        msg = finance.show_operations(call.message.chat.id, count_offset)
+        db.update_param(call.message.chat.id, 'count_offset', db.fetch_param(call.message.chat.id, 'count_offset') + 5)
+        msg = finance.show_operations(call.message.chat.id, db.fetch_param(call.message.chat.id, 'count_offset'))
         bot.send_message(call.message.chat.id, msg)
-        count_offset += 5
-        if count_offset < int(*db.count(call.message.chat.id)):
+        if db.fetch_param(call.message.chat.id, 'count_offset')+5 < int(*db.count(call.message.chat.id)):
             show_operations_menu(call.message.chat.id)
         else:
             bot.send_message(call.message.chat.id, 'Больше записей нет')
             show_operations_menu_without_next(call.message.chat.id)
-            count_offset = 0
+            db.update_param(call.message.chat.id, 'count_offset', 0)
 
     if call.data == 'interval':
-        callendar_param = 'interv'
+        db.update_param(call.message.chat.id, 'callendar_param', 'interv')
+        interval = {}
+        db.update_param(call.message.chat.id, 'interval', interval)
         start_callendar(call.message.chat.id)
 
     if call.data == 'show_all_groups':
@@ -325,24 +341,18 @@ def callback_worker(call):
         budget_menu(call.message.chat.id)
 
     if call.data == 'to_main':
-        bot.send_message(call.message.chat.id, 'Выбери нужный раздел',
-                         reply_markup=keyboard_main)
-        count_offset = 0
+        to_main(call.message.chat.id)
 
     if call.data == 'today':
-        operation_date = date.today()
-        print(operation_date)
-        new_exe['operation_date'] = operation_date
+        operation_date = db.update_param(call.message.chat.id, 'operation_date', date.today())
         create_finance(call.message.chat.id)
 
     if call.data == 'yesterday':
-        operation_date = date.today() - timedelta(days=1)
-        print(operation_date)
-        new_exe['operation_date'] = operation_date
+        operation_date = db.update_param(call.message.chat.id, 'operation_date', date.today() - timedelta(days=1))
         create_finance(call.message.chat.id)
 
     if call.data == 'other_date':
-        callendar_param = 'new_op'
+        db.update_param(call.message.chat.id, 'callendar_param', 'new_op')
         start_callendar(call.message.chat.id)
 
 
