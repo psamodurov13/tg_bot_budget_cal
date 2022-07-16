@@ -38,6 +38,8 @@ key_show_group = types.InlineKeyboardButton(text='Посмотреть стат�
 keyboard.add(key_show_group)
 key_show_all_price = types.InlineKeyboardButton(text='Всего потрачено', callback_data='show_all_price')
 keyboard.add(key_show_all_price)
+key_download_excel = types.InlineKeyboardButton(text='Скачать отчет', callback_data='download')
+keyboard.add(key_download_excel)
 keyboard.add(key_to_main)
 
 # Готовим кнопки перевода расходов в одну валюту
@@ -63,6 +65,14 @@ key_interval_operations = types.InlineKeyboardButton(text='Выбрать инт
 keyboard_operations_interval.add(key_interval_operations)
 keyboard_operations_interval.add(key_to_main)
 
+# Готовим кнопки скачивания
+keyboard_download_excel = types.InlineKeyboardMarkup()
+key_download_all = types.InlineKeyboardButton(text='Выгрузить все операции', callback_data='download_all')
+keyboard_download_excel.add(key_download_all)
+key_download_category = types.InlineKeyboardButton(text='Выбрать статью расходов', callback_data='download_category')
+keyboard_download_excel.add(key_download_category)
+keyboard_download_excel.add(key_to_main)
+
 # Готовим кнопки интервала времени операций без next
 keyboard_operations_interval_wo_next = types.InlineKeyboardMarkup()
 keyboard_operations_interval_wo_next.add(key_interval_operations)
@@ -75,6 +85,7 @@ keyboard_calendar.add(key_to_main)
 
 @bot.message_handler(commands=['start'])
 def start_message(message):
+    db.create_db(message.chat.id)
     bot.send_message(message.chat.id,
                      "Привет. Я помогу вести книгу учета расходов и заполнять календарь", reply_markup=keyboard_main)
 
@@ -180,9 +191,6 @@ def start_callendar(chat_id):
 def cal(c):
     # Ввод даты полностью
     result, key, step = DetailedTelegramCalendar().process(c.data)
-    interval = json.loads(db.fetch_param(c.message.chat.id, 'interval').replace('\'', '"'))
-    print(interval)
-    print(type(interval))
     callendar_param = db.fetch_param(c.message.chat.id, 'callendar_param')
     if not result and key:
         bot.edit_message_text(f"Выберите {LSTEP[step]}",
@@ -199,6 +207,9 @@ def cal(c):
             create_finance(c.message.chat.id)
             db.update_param(c.message.chat.id, 'callendar_param', '')
         if callendar_param == 'interv':
+            interval = json.loads(db.fetch_param(c.message.chat.id, 'interval').replace('\'', '"'))
+            print(interval)
+            print(type(interval))
             if len(interval) == 0:
                 interval['start'] = str(result)
                 db.update_param(c.message.chat.id, 'interval', interval)
@@ -273,7 +284,15 @@ def callback_worker(call):
         msg = finance.show_operations(call.message.chat.id)
         # Отправляем текст в Телеграм
         bot.send_message(call.message.chat.id, msg)
-        show_operations_menu(call.message.chat.id)
+        print(db.count(call.message.chat.id)[0])
+        print('len', db.count(call.message.chat.id)[0])
+        if db.count(call.message.chat.id)[0] == 0:
+            budget_menu(call.message.chat.id)
+        elif db.fetch_param(call.message.chat.id, 'count_offset') + 5 >= int(*db.count(call.message.chat.id)):
+            show_operations_menu_without_next(call.message.chat.id)
+        else:
+            show_operations_menu(call.message.chat.id)
+
 
     if call.data == 'next':
         db.update_param(call.message.chat.id, 'count_offset', db.fetch_param(call.message.chat.id, 'count_offset') + 5)
@@ -344,16 +363,27 @@ def callback_worker(call):
         to_main(call.message.chat.id)
 
     if call.data == 'today':
-        operation_date = db.update_param(call.message.chat.id, 'operation_date', date.today())
+        db.update_param(call.message.chat.id, 'operation_date', date.today())
         create_finance(call.message.chat.id)
 
     if call.data == 'yesterday':
-        operation_date = db.update_param(call.message.chat.id, 'operation_date', date.today() - timedelta(days=1))
+        db.update_param(call.message.chat.id, 'operation_date', date.today() - timedelta(days=1))
         create_finance(call.message.chat.id)
 
     if call.data == 'other_date':
         db.update_param(call.message.chat.id, 'callendar_param', 'new_op')
         start_callendar(call.message.chat.id)
 
+    if call.data == 'download':
+        bot.send_message(call.message.chat.id, 'Выберите тип отчета',
+                         reply_markup=keyboard_download_excel)
+
+    if call.data == 'download_all':
+        file_name = finance.send_excel(call.message.chat.id)
+        bot.send_document(call.message.chat.id, document=open(file_name, 'rb'))
+
+    if call.data == 'download_category':
+        bot.send_message(call.message.chat.id, 'В разработке',
+                         reply_markup=keyboard_to_main)
 
 bot.polling(none_stop=True, interval=0)

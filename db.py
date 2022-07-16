@@ -2,8 +2,7 @@ import sqlite3 as sq
 import os
 
 
-
-def insert(table_id, dict_new):
+def create_db(table_id):
     cn = sq.connect(os.path.join('budget.db'))
     cr = cn.cursor()
     cr.execute(f'''CREATE TABLE IF NOT EXISTS "{table_id}"
@@ -13,8 +12,24 @@ def insert(table_id, dict_new):
                 operation_name VARCHAR(255), 
                 operation_group VARCHAR(255),
                 operation_date DATE) ''')
+    cr.execute(f'''CREATE TABLE IF NOT EXISTS "users"
+                   (user INTEGER,
+                   operation_date DATE,
+                   new_exe VARCHAR,
+                   count_offset INTEGER,
+                   callendar_param VARCHAR,
+                   interval VARCHAR,
+                   del_operations VARCHAR)''')
     cr.execute(f'''INSERT OR IGNORE INTO users  
-                   (user) VALUES ({table_id}) ''')
+                   (user, operation_date, new_exe, count_offset, callendar_param, interval, del_operations) 
+                   VALUES ({table_id}, "", "", 0, "", "", "") ''')
+    cn.commit()
+    cn.close()
+
+
+def insert(table_id, dict_new):
+    cn = sq.connect(os.path.join('budget.db'))
+    cr = cn.cursor()
     columns = ', '.join([i for i in dict_new.keys()])
     values = [i for i in dict_new.values()]
     placeholders = ', '.join('?' * len(dict_new.keys()))
@@ -125,4 +140,3 @@ def fetch_param(user_id, param):
     print(result)
     cn.close()
     return result
-

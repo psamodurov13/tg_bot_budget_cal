@@ -28,16 +28,20 @@ def show_all_groups(chat_id):
 
 # Функция вывода всех операций
 def show_operations(chat_id, count_offset=0):
-    if count_offset == 0:
+    operations = find_operations(chat_id, count_offset)
+    if count_offset == 0 and len(operations[0]) != 0:
         result_show_operations = 'Последние 5 операций: \n'
     else:
         result_show_operations = ''
-    return result_show_operations + find_operations(chat_id, count_offset)[1]
+    return result_show_operations + operations[1]
 
 
 def find_operations(chat_id, count_offset):
     operations_db = db.fetchall(chat_id, offset=f'OFFSET {count_offset}')
-    finded_operations = ''
+    if len(operations_db) == 0:
+        finded_operations = 'Операций нет'
+    else:
+        finded_operations = ''
     for i in operations_db:
         finded_operations += f"{i[0]} {i[1]} - {i[2]} / {i[3]} ({i[4]}) /del{operations_db.index(i)} \n"
     print(operations_db)
