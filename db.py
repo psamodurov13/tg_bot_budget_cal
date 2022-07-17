@@ -13,7 +13,7 @@ def create_db(table_id):
                 operation_group VARCHAR(255),
                 operation_date DATE) ''')
     cr.execute(f'''CREATE TABLE IF NOT EXISTS "users"
-                   (user INTEGER,
+                   (user INTEGER PRIMARY KEY UNIQUE,
                    operation_date DATE,
                    new_exe VARCHAR,
                    count_offset INTEGER,
