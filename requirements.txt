@@ -1,11 +1,8 @@
-telebot
-telegram_bot_calendar
+pyTelegramBotApi
+python-telegram-bot-calendar
 datetime
 loguru
-json
-ast
-forex_python.converter
+forex_python
 requests
 xlsxwriter
-sqlite3
-os
+
