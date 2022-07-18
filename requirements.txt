@@ -1,0 +1,11 @@
+telebot
+telegram_bot_calendar
+datetime
+loguru
+json
+ast
+forex_python.converter
+requests
+xlsxwriter
+sqlite3
+os
