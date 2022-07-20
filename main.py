@@ -32,9 +32,7 @@ key_add_operation = types.InlineKeyboardButton(text='Добавить запис
 keyboard.add(key_add_operation)
 key_show_operations = types.InlineKeyboardButton(text='Посмотреть операции', callback_data='show_operations')
 keyboard.add(key_show_operations)
-key_show_all_groups = types.InlineKeyboardButton(text='Посмотреть статьи расходов', callback_data='show_all_groups')
-keyboard.add(key_show_all_groups)
-key_show_group = types.InlineKeyboardButton(text='Посмотреть статью расходов', callback_data='show_group')
+key_show_group = types.InlineKeyboardButton(text='Посмотреть статьи расходов', callback_data='show_group')
 keyboard.add(key_show_group)
 key_show_all_price = types.InlineKeyboardButton(text='Всего потрачено', callback_data='show_all_price')
 keyboard.add(key_show_all_price)
@@ -78,9 +76,13 @@ keyboard_operations_interval_wo_next = types.InlineKeyboardMarkup()
 keyboard_operations_interval_wo_next.add(key_interval_operations)
 keyboard_operations_interval_wo_next.add(key_to_main)
 
+
 # Готовим кнопки календаря
 keyboard_calendar = types.InlineKeyboardMarkup()
 keyboard_calendar.add(key_to_main)
+
+# Кнопка добавления валюты
+key_add_currency = types.InlineKeyboardButton(text='Добавить валюту', callback_data='add_currency')
 
 
 @bot.message_handler(commands=['start'])
@@ -136,7 +138,6 @@ def get_text_messages(message):
 def add_operation(chat_id):
     # Ввод суммы новой операции
     message = bot.send_message(chat_id, 'Введите сумму.', reply_markup=keyboard_to_main)
-
     bot.register_next_step_handler(message, add_operation_currency)
 
 
@@ -146,19 +147,41 @@ def add_operation_currency(message):
     if message.text.isdigit():
         # Ввод валюты новой операции
         new_exe = {'operation_price': float(message.text)}
-        bot.send_message(message.from_user.id, 'Введите валюту.')
-        bot.register_next_step_handler(message, add_operation_name, new_exe)
+        db.update_param(message.from_user.id, 'new_exe', new_exe)
+        currency_db = [str(*i) for i in db.fetch_unique_param(message.from_user.id, 'operation_currency')]
+        # Создаем клавиатуру для вывода валют
+        keyboard_choice_currency = types.InlineKeyboardMarkup()
+        for i in currency_db:
+            keyboard_choice_currency.add(types.InlineKeyboardButton(text=str(i),
+                                                                    callback_data=str('oper_curr_' + str(i))))
+        keyboard_choice_currency.add(key_add_currency)
+        bot.send_message(message.from_user.id, 'Введите валюту.', reply_markup=keyboard_choice_currency)
+        # bot.register_next_step_handler(message, add_operation_name, new_exe)
     else:
         bot.send_message(message.from_user.id, 'Возникла ошибка')
         to_main(message.from_user.id)
 
+@logger.catch
+def add_currency(chat_id):
+    keyboard_add_currency = types.InlineKeyboardMarkup()
+    for i in finance.all_currency:
+        keyboard_add_currency.add(types.InlineKeyboardButton(text=str(i), callback_data=str('add_curr_' + i)))
+    keyboard_add_currency.add(key_to_main)
+    bot.send_message(chat_id, 'Какую валюту Вы хотите добавить?', reply_markup=keyboard_add_currency)
+
+def show_categories(chat_it, target):
+    keyboard_show_group = types.InlineKeyboardMarkup()
+    groups_db = [str(*i) for i in db.fetch_unique_param(chat_it, 'operation_group')]
+    for i in groups_db:
+        keyboard_show_group.add(types.InlineKeyboardButton(text=str(i),
+                                                           callback_data=str(str(target) + str(i))))
+    keyboard_show_group.add(key_to_main)
+    return keyboard_show_group
 
 @logger.catch
-def add_operation_name(message, new_exe):
+def add_operation_name(chat_id, new_exe):
     # Ввод названия операции
-    new_exe['operation_currency'] = message.text
-    bot.send_message(message.from_user.id, 'Введите товар.')
-    bot.register_next_step_handler(message, add_operation_group, new_exe)
+    bot.register_next_step_handler(bot.send_message(chat_id, 'Введите товар.'), add_operation_group, new_exe)
 
 
 @logger.catch
@@ -238,6 +261,7 @@ def create_finance(chat_id):
     msg = 'Данные сохранены.'
     bot.send_message(chat_id, msg)
     budget_menu(chat_id)
+    db.update_param(chat_id, 'new_exe', '{}')
     db.update_param(chat_id, 'operation_date', '')
     db.update_param(chat_id, 'callendar_param', '')
 
@@ -311,22 +335,9 @@ def callback_worker(call):
         db.update_param(call.message.chat.id, 'interval', interval)
         start_callendar(call.message.chat.id)
 
-    if call.data == 'show_all_groups':
-        msg = finance.show_all_groups(call.message.chat.id)
-        # Отправляем текст в Телеграм
-        bot.send_message(call.message.chat.id, msg)
-        budget_menu(call.message.chat.id)
-
     if call.data == 'show_group':
-        # Создаем клавиатуру для вывода групп
-        keyboard_show_group = types.InlineKeyboardMarkup()
-        groups_db = [str(*i) for i in db.fetch_unique_param(call.message.chat.id, 'operation_group')]
-        for i in groups_db:
-            keyboard_show_group.add(types.InlineKeyboardButton(text=str(i),
-                                                               callback_data=str('show_group_' + str(i))))
-        # Отправляем текст и кнопки групп в Телеграм
-        bot.send_message(call.message.chat.id, 'Расходы какой группы хотите посмотреть?',
-                         reply_markup=keyboard_show_group)
+        bot.send_message(call.message.chat.id, 'Статьи расходов. Для просмотра разходов, нажмите кнопку',
+                         reply_markup=show_categories(call.message.chat.id, 'show_group_'))
 
     if 'show_group_' in call.data:
         msg = finance.show_group(call.message.chat.id, call.data[11:])
@@ -342,9 +353,9 @@ def callback_worker(call):
                          reply_markup=keyboard_convert)
 
     if call.data == 'convert_to_one':
+        currency_db = [str(*i) for i in db.fetch_unique_param(call.message.chat.id, 'operation_currency')]
         # Создаем клавиатуру для вывода валют
         keyboard_choice_currency = types.InlineKeyboardMarkup()
-        currency_db = [str(*i) for i in db.fetch_unique_param(call.message.chat.id, 'operation_currency')]
         for i in currency_db:
             keyboard_choice_currency.add(types.InlineKeyboardButton(text=str(i),
                                                                     callback_data=str('choice_curr_' + str(i))))
@@ -358,6 +369,20 @@ def callback_worker(call):
         # Отправляем текст в Телеграм
         bot.send_message(call.message.chat.id, msg)
         budget_menu(call.message.chat.id)
+
+    if 'oper_curr_' in call.data:
+        new_exe = json.loads(db.fetch_param(call.message.chat.id, 'new_exe').replace('\'', '"'))
+        new_exe['operation_currency'] = call.data[10:]
+        add_operation_name(call.message.chat.id, new_exe)
+
+    if call.data == 'add_currency':
+        add_currency(call.message.chat.id)
+
+    if 'add_curr_' in call.data:
+        new_exe = json.loads(db.fetch_param(call.message.chat.id, 'new_exe').replace('\'', '"'))
+        new_exe['operation_currency'] = call.data[9:]
+        add_operation_name(call.message.chat.id, new_exe)
+
 
     if call.data == 'to_main':
         to_main(call.message.chat.id)
@@ -380,10 +405,15 @@ def callback_worker(call):
 
     if call.data == 'download_all':
         file_name = finance.send_excel(call.message.chat.id)
-        bot.send_document(call.message.chat.id, document=open(file_name, 'rb'))
+        bot.send_document(call.message.chat.id, document=open(file_name, 'rb'), reply_markup=keyboard_to_main)
 
     if call.data == 'download_category':
-        bot.send_message(call.message.chat.id, 'В разработке',
-                         reply_markup=keyboard_to_main)
+        bot.send_message(call.message.chat.id, 'Выбери категорию',
+                         reply_markup=show_categories(call.message.chat.id, 'download_cat_'))
+
+    if 'download_cat_' in call.data:
+        file_name = finance.send_excel(call.message.chat.id, call.data[13:])
+        bot.send_document(call.message.chat.id, document=open(file_name, 'rb'), reply_markup=keyboard_to_main)
+
 
 bot.polling(none_stop=True, interval=0)

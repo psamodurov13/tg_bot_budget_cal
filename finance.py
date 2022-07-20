@@ -4,8 +4,9 @@ import db
 import json
 import xlsxwriter
 
-del_operations = []
-
+data = requests.get('https://www.cbr-xml-daily.ru/daily_json.js').json()
+data2 = requests.get('https://theforexapi.com/api/latest').json()
+all_currency = data['Valute'].keys() & data2['rates'].keys()
 
 # Функция вывода всех операций определенной группы
 def show_group(chat_id, search_group):
@@ -15,15 +16,6 @@ def show_group(chat_id, search_group):
         if i[3] == search_group:
             result_show_group += f"{i[0]} {i[1]} - {i[2]} ({i[4]})\n"
     return result_show_group
-
-
-# Функция вывода всех групп
-def show_all_groups(chat_id):
-    result_show_all_groups = 'Статьи расходов: \n'
-    groups_db = db.fetch_unique_param(chat_id, 'operation_group')
-    for i in groups_db:
-        result_show_all_groups += str(*i) + '\n'
-    return result_show_all_groups
 
 
 # Функция вывода всех операций
@@ -76,7 +68,6 @@ def convert_to_one(chat_id, choice_currency):
     currency_db = [str(*i) for i in db.fetch_unique_param(chat_id, 'operation_currency')]
     result = 0
     convert = CurrencyRates()
-    data = requests.get('https://www.cbr-xml-daily.ru/daily_json.js').json()
     for index in range(len(currency_db)):
         sum_cur = str(*db.sum_price(chat_id, currency_db[index]))
         if currency_db[index] == choice_currency:
@@ -96,20 +87,20 @@ def convert_to_one(chat_id, choice_currency):
 
 def send_excel(chat_id, groups_list='', limit=5):
     if groups_list:
-        ...
+        all_op = ([('цена', 'валюта', 'назначение', 'статья', 'дата', 'id')]
+                  + db.fetchall(chat_id, f'WHERE operation_group = "{groups_list}"', offset='', limit=''))
+        print(all_op)
+        file_name = f'budget-{chat_id}-{groups_list}.xlsx'
     else:
         all_op = [('цена', 'валюта', 'назначение', 'статья', 'дата', 'id')] + db.fetchall(chat_id, offset='', limit='')
         print(all_op)
-
-        # Create a workbook and add a worksheet.
         file_name = f'budget-{chat_id}.xlsx'
-        workbook = xlsxwriter.Workbook(file_name)
-        worksheet = workbook.add_worksheet() # Some data we want to write to the worksheet.
 
-        # data = [(123, 'enalapril'), (456, 'atenolol'), (789, 'lovastatin')] # Iterate over the data and write it out row by row.
-        for row, line in enumerate(all_op):
-            for col, cell in enumerate(line):
-                worksheet.write(row, col, cell)
-        workbook.close()
+    workbook = xlsxwriter.Workbook(file_name)
+    worksheet = workbook.add_worksheet()
+    for row, line in enumerate(all_op):
+        for col, cell in enumerate(line):
+            worksheet.write(row, col, cell)
+    workbook.close()
     return file_name
 

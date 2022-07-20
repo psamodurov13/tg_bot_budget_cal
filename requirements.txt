@@ -1,8 +1,7 @@
 pyTelegramBotApi
 python-telegram-bot-calendar
-datetime
-loguru
+datetime~=4.5
+loguru~=0.6.0
 forex_python
-requests
-xlsxwriter
-
+requests~=2.28.0
+xlsxwriter~=3.0.3
