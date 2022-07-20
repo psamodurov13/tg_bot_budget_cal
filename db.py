@@ -19,10 +19,12 @@ def create_db(table_id):
                    count_offset INTEGER,
                    callendar_param VARCHAR,
                    interval VARCHAR,
-                   del_operations VARCHAR)''')
+                   del_operations VARCHAR,
+                   type_operation VARCHAR)''')
     cr.execute(f'''INSERT OR IGNORE INTO users  
-                   (user, operation_date, new_exe, count_offset, callendar_param, interval, del_operations) 
-                   VALUES ({table_id}, "", "", 0, "", "", "") ''')
+                   (user, operation_date, new_exe, count_offset, callendar_param, interval, del_operations, 
+                   type_operation) 
+                   VALUES ({table_id}, "", "", 0, "", "", "", "") ''')
     cn.commit()
     cn.close()
 
@@ -71,12 +73,13 @@ def fetch_unique_param(table_id, param):
     return result
 
 
-def sum_price(table_id, currency):
+def sum_price(table_id, currency, type_operation):
     cn = sq.connect(os.path.join('budget.db'))
     cr = cn.cursor()
     cr.execute(f'''SELECT SUM("operation_price")
                    FROM "{table_id}"
-                   WHERE operation_currency = "{currency}"''')
+                   WHERE operation_currency = "{currency}"
+                   AND operation_price {type_operation}''')
     result = cr.fetchall()[0]
     cn.close()
     return result

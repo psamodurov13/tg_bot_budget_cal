@@ -3,10 +3,12 @@ import requests
 import db
 import json
 import xlsxwriter
+from datetime import date
 
 data = requests.get('https://www.cbr-xml-daily.ru/daily_json.js').json()
 data2 = requests.get('https://theforexapi.com/api/latest').json()
 all_currency = data['Valute'].keys() & data2['rates'].keys()
+
 
 # Функция вывода всех операций определенной группы
 def show_group(chat_id, search_group):
@@ -40,12 +42,19 @@ def find_operations(chat_id, count_offset):
     db.update_param(chat_id, 'del_operations', operations_db)
     return [operations_db, finded_operations]
 
+
 # Функция вывода суммы всех операций
-def show_all_price(chat_id):
+def show_all_price(chat_id, type_operation=''):
     result_show_all_price = 'Всего потрачено: \n'
     currency_db = [str(*i) for i in db.fetch_unique_param(chat_id, 'operation_currency')]
     for currency in currency_db:
-        sum_cur = str(*db.sum_price(chat_id, currency))
+        if type_operation:
+            try:
+                sum_cur = str(abs(*db.sum_price(chat_id, currency, type_operation)))
+            except TypeError:
+                sum_cur = '0'
+        else:
+            sum_cur = str(*db.sum_price(chat_id, currency))
         result_show_all_price += f"{sum_cur} {currency} \n"
     return result_show_all_price
 
@@ -68,8 +77,12 @@ def convert_to_one(chat_id, choice_currency):
     currency_db = [str(*i) for i in db.fetch_unique_param(chat_id, 'operation_currency')]
     result = 0
     convert = CurrencyRates()
+    type_operation = db.fetch_param(chat_id, 'type_operation')
     for index in range(len(currency_db)):
-        sum_cur = str(*db.sum_price(chat_id, currency_db[index]))
+        try:
+            sum_cur = str(abs(*db.sum_price(chat_id, currency_db[index], type_operation)))
+        except TypeError:
+            sum_cur = '0'
         if currency_db[index] == choice_currency:
             result += int(sum_cur)
         else:
@@ -82,6 +95,7 @@ def convert_to_one(chat_id, choice_currency):
                               data['Valute'][choice_currency]['Nominal']
                 else:
                     result += convert.convert(currency_db[index], choice_currency, int(sum_cur))
+    db.update_param(chat_id, 'type_operation', '')
     return result
 
 
@@ -104,3 +118,11 @@ def send_excel(chat_id, groups_list='', limit=5):
     workbook.close()
     return file_name
 
+
+def fast_add(chat_id, parse):
+    parse[0] = int(parse[0])
+    parse[1] = parse[1].upper()
+    db.update_param(chat_id, 'operation_date', date.today())
+    new_exe = dict(zip(['operation_price', 'operation_currency',
+                        'operation_name', 'operation_group'], parse))
+    db.update_param(chat_id, 'new_exe', new_exe)
