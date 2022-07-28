@@ -7,11 +7,12 @@ import db
 from loguru import logger
 import json
 import ast
-import config
+import os
 
 logger.add('debug.log', format='{time} {level} {message}', level='DEBUG', rotation='10 KB', compression='zip')
 
-bot = telebot.TeleBot(config.BOT_TOKEN)
+token = os.getenv("TOKEN")
+bot = telebot.TeleBot(token)
 
 # Общая кнопка возврата в главное меню
 keyboard_to_main = types.InlineKeyboardMarkup()
