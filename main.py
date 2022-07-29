@@ -335,10 +335,10 @@ def callback_worker(call):
 
     if call.data == 'show_all_price' or call.data == 'show_all_plus_price':
         if call.data == 'show_all_price':
-            msg = finance.show_all_price(call.message.chat.id, "< 0")
+            msg = 'Всего потрачено: \n' + finance.show_all_price(call.message.chat.id, "< 0")
             db.update_param(call.message.chat.id, 'type_operation', "< 0")
         else:
-            msg = finance.show_all_price(call.message.chat.id, "> 0")
+            msg = 'Всего получено: \n' + finance.show_all_price(call.message.chat.id, "> 0")
             db.update_param(call.message.chat.id, 'type_operation', "> 0")
         # Отправляем текст в Телеграм
         bot.send_message(call.message.chat.id, msg)
@@ -375,7 +375,6 @@ def callback_worker(call):
         new_exe = json.loads(db.fetch_param(call.message.chat.id, 'new_exe').replace('\'', '"'))
         new_exe['operation_currency'] = call.data[9:]
         add_operation_name(call.message.chat.id, new_exe)
-
 
     if call.data == 'to_main':
         to_main(call.message.chat.id)
