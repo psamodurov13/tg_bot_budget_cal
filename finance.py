@@ -45,7 +45,7 @@ def find_operations(chat_id, count_offset):
 
 # Функция вывода суммы всех операций
 def show_all_price(chat_id, type_operation=''):
-    result_show_all_price = 'Всего потрачено: \n'
+    result_show_all_price = ''
     currency_db = [str(*i) for i in db.fetch_unique_param(chat_id, 'operation_currency')]
     for currency in currency_db:
         if type_operation:
