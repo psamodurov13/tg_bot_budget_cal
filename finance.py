@@ -7,7 +7,7 @@ from datetime import date
 
 data = requests.get('https://www.cbr-xml-daily.ru/daily_json.js').json()
 data2 = requests.get('https://theforexapi.com/api/latest').json()
-all_currency = data['Valute'].keys() & data2['rates'].keys()
+all_currency = data['Valute'].keys() & data2['rates'].keys() + ['RUB']
 
 
 # Функция вывода всех операций определенной группы
