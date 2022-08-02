@@ -140,7 +140,7 @@ def add_operation(chat_id, calldata):
 
 @logger.catch
 def add_operation_currency(message, calldata):
-    if message.text.isdigit():
+    if message.text.replace('.', '').isdigit():
         if calldata == 'add_operation':
             new_exe = {'operation_price': float('-' + message.text)}
         if calldata == 'add_plus_operation':
