@@ -1,119 +1,37 @@
-2022-07-20T00:59:48.401080+0300 ERROR An error has been caught in function 'run', process 'MainProcess' (12008), thread 'WorkerThread1' (123145498157056):
+2022-08-02T14:33:25.958613+0300 ERROR An error has been caught in function 'callback_worker', process 'MainProcess' (9732), thread 'WorkerThread1' (123145384779776):
 Traceback (most recent call last):
 
   File "/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/threading.py", line 890, in _bootstrap
     self._bootstrap_inner()
-    │    └ <function Thread._bootstrap_inner at 0x7fe12e17ec10>
-    └ <WorkerThread(WorkerThread1, started daemon 123145498157056)>
+    │    └ <function Thread._bootstrap_inner at 0x7fc7e943ec10>
+    └ <WorkerThread(WorkerThread1, started daemon 123145384779776)>
   File "/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/threading.py", line 932, in _bootstrap_inner
     self.run()
-    │    └ <function WorkerThread.run at 0x7fe12e30d280>
-    └ <WorkerThread(WorkerThread1, started daemon 123145498157056)>
-> File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/venv/lib/python3.8/site-packages/telebot/util.py", line 93, in run
+    │    └ <function WorkerThread.run at 0x7fc7eb033280>
+    └ <WorkerThread(WorkerThread1, started daemon 123145384779776)>
+  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/venv/lib/python3.8/site-packages/telebot/util.py", line 93, in run
     task(*args, **kwargs)
     │     │       └ {}
-    │     └ (<telebot.types.Message object at 0x7fe12edd7ca0>, {'operation_price': 888.0})
-    └ <function add_operation_name at 0x7fe12edbeca0>
+    │     └ (<telebot.types.CallbackQuery object at 0x7fc7ed5e1610>,)
+    └ <function callback_worker at 0x7fc7ed5db3a0>
 
-  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/main.py", line 167, in add_operation_name
-    bot.register_next_step_handler(bot.send_message(chat_id, 'Введите товар.'), add_operation_group, new_exe)
-    │   │                          │   │            │                           │                    └ {'operation_price': 888.0}
-    │   │                          │   │            │                           └ <function add_operation_group at 0x7fe12edcd040>
-    │   │                          │   │            └ <telebot.types.Message object at 0x7fe12edd7ca0>
-    │   │                          │   └ <function TeleBot.send_message at 0x7fe12e923f70>
-    │   │                          └ <telebot.TeleBot object at 0x7fe12ed9d880>
-    │   └ <function TeleBot.register_next_step_handler at 0x7fe12e92eb80>
-    └ <telebot.TeleBot object at 0x7fe12ed9d880>
+> File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/main.py", line 380, in callback_worker
+    to_main(call.message.chat.id)
+    │       │    │       │    └ 720023902
+    │       │    │       └ <telebot.types.Chat object at 0x7fc7ed5dcf40>
+    │       │    └ <telebot.types.Message object at 0x7fc7ed5e1640>
+    │       └ <telebot.types.CallbackQuery object at 0x7fc7ed5e1610>
+    └ <function to_main at 0x7fc7ed5d6f70>
 
-  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/venv/lib/python3.8/site-packages/telebot/__init__.py", line 1006, in send_message
-    apihelper.send_message(
-    │         └ <function send_message at 0x7fe12e8ed940>
-    └ <module 'telebot.apihelper' from '/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/venv/lib/python3.8/site-packages/tele...
-  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/venv/lib/python3.8/site-packages/telebot/apihelper.py", line 267, in send_message
-    return _make_request(token, method_url, params=payload, method='post')
-           │             │      │                  └ {'chat_id': "{'content_type': 'text', 'id': 4870, 'message_id': 4870, 'from_user': {'id': 720023902, 'is_bot': False, 'first_...
-           │             │      └ 'sendMessage'
-           │             └ '5502805436:AAF83iukDBx0h4XXaeVLesFduwsxOFbETNw'
-           └ <function _make_request at 0x7fe12e37c9d0>
-  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/venv/lib/python3.8/site-packages/telebot/apihelper.py", line 152, in _make_request
-    json_result = _check_result(method_name, result)
-                  │             │            └ <Response [400]>
-                  │             └ 'sendMessage'
-                  └ <function _check_result at 0x7fe12e37c940>
-  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/venv/lib/python3.8/site-packages/telebot/apihelper.py", line 179, in _check_result
-    raise ApiTelegramException(method_name, result, result_json)
-          │                    │            │       └ {'ok': False, 'error_code': 400, 'description': 'Bad Request: chat not found'}
-          │                    │            └ <Response [400]>
-          │                    └ 'sendMessage'
-          └ <class 'telebot.apihelper.ApiTelegramException'>
+  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/main.py", line 280, in to_main
+    db.update_param(chat_id, 'count_offset', 0)
+    │  │            └ 720023902
+    │  └ <function update_param at 0x7fc7ed2718b0>
+    └ <module 'db' from '/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/db.py'>
 
-telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 400. Description: Bad Request: chat not found
-2022-07-20T10:02:59.710241+0300 ERROR An error has been caught in function 'run', process 'MainProcess' (14661), thread 'WorkerThread2' (123145351733248):
-Traceback (most recent call last):
+  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/db.py", line 129, in update_param
+    cr.execute(f'''UPDATE users
+    │  └ <method 'execute' of 'sqlite3.Cursor' objects>
+    └ <sqlite3.Cursor object at 0x7fc7ed5b69d0>
 
-  File "/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/threading.py", line 890, in _bootstrap
-    self._bootstrap_inner()
-    │    └ <function Thread._bootstrap_inner at 0x7fd9f627ec10>
-    └ <WorkerThread(WorkerThread2, started daemon 123145351733248)>
-  File "/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/threading.py", line 932, in _bootstrap_inner
-    self.run()
-    │    └ <function WorkerThread.run at 0x7fd9f640d280>
-    └ <WorkerThread(WorkerThread2, started daemon 123145351733248)>
-> File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/venv/lib/python3.8/site-packages/telebot/util.py", line 93, in run
-    task(*args, **kwargs)
-    │     │       └ {}
-    │     └ (<telebot.types.Message object at 0x7fd9f74beeb0>,)
-    └ <function get_text_messages at 0x7fd9f749f310>
-
-  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/main.py", line 121, in get_text_messages
-    parse[1] = parse[1].upper()
-    │          └ [100]
-    └ [100]
-
-IndexError: list index out of range
-2022-07-20T10:03:30.619252+0300 ERROR An error has been caught in function 'run', process 'MainProcess' (14661), thread 'WorkerThread1' (123145334943744):
-Traceback (most recent call last):
-
-  File "/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/threading.py", line 890, in _bootstrap
-    self._bootstrap_inner()
-    │    └ <function Thread._bootstrap_inner at 0x7fd9f627ec10>
-    └ <WorkerThread(WorkerThread1, started daemon 123145334943744)>
-  File "/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/threading.py", line 932, in _bootstrap_inner
-    self.run()
-    │    └ <function WorkerThread.run at 0x7fd9f640d280>
-    └ <WorkerThread(WorkerThread1, started daemon 123145334943744)>
-> File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/venv/lib/python3.8/site-packages/telebot/util.py", line 93, in run
-    task(*args, **kwargs)
-    │     │       └ {}
-    │     └ (<telebot.types.Message object at 0x7fd9f74c8cd0>, {'operation_price': 100.0})
-    └ <function add_operation_name at 0x7fd9f749fca0>
-
-  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/main.py", line 166, in add_operation_name
-    message = bot.send_message(chat_id, 'Введите товар.')
-              │   │            └ <telebot.types.Message object at 0x7fd9f74c8cd0>
-              │   └ <function TeleBot.send_message at 0x7fd9f7112f70>
-              └ <telebot.TeleBot object at 0x7fd9f747e880>
-
-  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/venv/lib/python3.8/site-packages/telebot/__init__.py", line 1006, in send_message
-    apihelper.send_message(
-    │         └ <function send_message at 0x7fd9f70dd940>
-    └ <module 'telebot.apihelper' from '/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/venv/lib/python3.8/site-packages/tele...
-  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/venv/lib/python3.8/site-packages/telebot/apihelper.py", line 267, in send_message
-    return _make_request(token, method_url, params=payload, method='post')
-           │             │      │                  └ {'chat_id': "{'content_type': 'text', 'id': 4886, 'message_id': 4886, 'from_user': {'id': 720023902, 'is_bot': False, 'first_...
-           │             │      └ 'sendMessage'
-           │             └ '5502805436:AAF83iukDBx0h4XXaeVLesFduwsxOFbETNw'
-           └ <function _make_request at 0x7fd9f647c9d0>
-  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/venv/lib/python3.8/site-packages/telebot/apihelper.py", line 152, in _make_request
-    json_result = _check_result(method_name, result)
-                  │             │            └ <Response [400]>
-                  │             └ 'sendMessage'
-                  └ <function _check_result at 0x7fd9f647c940>
-  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/venv/lib/python3.8/site-packages/telebot/apihelper.py", line 179, in _check_result
-    raise ApiTelegramException(method_name, result, result_json)
-          │                    │            │       └ {'ok': False, 'error_code': 400, 'description': 'Bad Request: chat not found'}
-          │                    │            └ <Response [400]>
-          │                    └ 'sendMessage'
-          └ <class 'telebot.apihelper.ApiTelegramException'>
-
-telebot.apihelper.ApiTelegramException: A request to the Telegram API was unsuccessful. Error code: 400. Description: Bad Request: chat not found
+sqlite3.OperationalError: no such table: users

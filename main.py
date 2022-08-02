@@ -13,7 +13,6 @@ logger.add('debug.log', format='{time} {level} {message}', level='DEBUG', rotati
 
 token = os.getenv("TOKEN")
 bot = telebot.TeleBot(token)
-
 # Общая кнопка возврата в главное меню
 keyboard_to_main = types.InlineKeyboardMarkup()
 key_to_main = types.InlineKeyboardButton(text='В главное меню', callback_data='to_main')
