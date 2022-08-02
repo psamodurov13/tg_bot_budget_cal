@@ -75,7 +75,7 @@ def show_operations_interval(chat_id, interval):
 # Функция конвертации во все валюты
 def convert_to_one(chat_id, choice_currency):
     currency_db = [str(*i) for i in db.fetch_unique_param(chat_id, 'operation_currency')]
-    result = 0
+    result = 0.0
     convert = CurrencyRates()
     type_operation = db.fetch_param(chat_id, 'type_operation')
     for index in range(len(currency_db)):
@@ -84,17 +84,17 @@ def convert_to_one(chat_id, choice_currency):
         except TypeError:
             sum_cur = '0'
         if currency_db[index] == choice_currency:
-            result += int(sum_cur)
+            result += float(sum_cur)
         else:
             if choice_currency == 'RUB':
-                result += int(sum_cur) * data['Valute'][currency_db[index]]['Value'] / \
+                result += float(sum_cur) * data['Valute'][currency_db[index]]['Value'] / \
                           data['Valute'][currency_db[index]]['Nominal']
             else:
                 if currency_db[index] == 'RUB':
-                    result += int(sum_cur) / data['Valute'][choice_currency]['Value'] * \
+                    result += float(sum_cur) / data['Valute'][choice_currency]['Value'] * \
                               data['Valute'][choice_currency]['Nominal']
                 else:
-                    result += convert.convert(currency_db[index], choice_currency, int(sum_cur))
+                    result += convert.convert(currency_db[index], choice_currency, float(sum_cur))
     db.update_param(chat_id, 'type_operation', '')
     return result
 
@@ -120,9 +120,12 @@ def send_excel(chat_id, groups_list='', limit=5):
 
 
 def fast_add(chat_id, parse):
-    parse[0] = int(parse[0])
-    parse[1] = parse[1].upper()
-    db.update_param(chat_id, 'operation_date', date.today())
-    new_exe = dict(zip(['operation_price', 'operation_currency',
-                        'operation_name', 'operation_group'], parse))
-    db.update_param(chat_id, 'new_exe', new_exe)
+    try:
+        parse[0] = float(parse[0])
+        parse[1] = parse[1].upper()
+        db.update_param(chat_id, 'operation_date', date.today())
+        new_exe = dict(zip(['operation_price', 'operation_currency',
+                            'operation_name', 'operation_group'], parse))
+        db.update_param(chat_id, 'new_exe', new_exe)
+    except Exception:
+        print('Ошибка', Exception)

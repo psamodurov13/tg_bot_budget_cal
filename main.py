@@ -118,7 +118,7 @@ def get_text_messages(message):
         del_operations = ast.literal_eval(db.fetch_param(message.chat.id, 'del_operations'))
         bot.send_message(message.from_user.id, db.delete(message.chat.id,
                                                          del_operations[int(message.text[4:])]), reply_markup=keyboard)
-    elif mt[0].isdigit(): # Быстрое добавление операции
+    elif mt[0].isdigit() or mt[0] == '-': # Быстрое добавление операции
         finance.fast_add(message.from_user.id, mt.split(', '))
         try:
             create_finance(message.from_user.id)

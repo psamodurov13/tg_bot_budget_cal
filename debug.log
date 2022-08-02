@@ -1,37 +1,33 @@
-2022-08-02T14:33:25.958613+0300 ERROR An error has been caught in function 'callback_worker', process 'MainProcess' (9732), thread 'WorkerThread1' (123145384779776):
+2022-08-02T14:49:41.819863+0300 ERROR An error has been caught in function 'run', process 'MainProcess' (9970), thread 'WorkerThread1' (123145438986240):
 Traceback (most recent call last):
 
   File "/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/threading.py", line 890, in _bootstrap
     self._bootstrap_inner()
-    │    └ <function Thread._bootstrap_inner at 0x7fc7e943ec10>
-    └ <WorkerThread(WorkerThread1, started daemon 123145384779776)>
+    │    └ <function Thread._bootstrap_inner at 0x7ff40513ec10>
+    └ <WorkerThread(WorkerThread1, started daemon 123145438986240)>
   File "/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8/threading.py", line 932, in _bootstrap_inner
     self.run()
-    │    └ <function WorkerThread.run at 0x7fc7eb033280>
-    └ <WorkerThread(WorkerThread1, started daemon 123145384779776)>
-  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/venv/lib/python3.8/site-packages/telebot/util.py", line 93, in run
+    │    └ <function WorkerThread.run at 0x7ff40530e280>
+    └ <WorkerThread(WorkerThread1, started daemon 123145438986240)>
+> File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/venv/lib/python3.8/site-packages/telebot/util.py", line 93, in run
     task(*args, **kwargs)
     │     │       └ {}
-    │     └ (<telebot.types.CallbackQuery object at 0x7fc7ed5e1610>,)
-    └ <function callback_worker at 0x7fc7ed5db3a0>
+    │     └ (<telebot.types.Message object at 0x7ff4064e1e20>,)
+    └ <function get_text_messages at 0x7ff4064ca280>
 
-> File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/main.py", line 380, in callback_worker
-    to_main(call.message.chat.id)
-    │       │    │       │    └ 720023902
-    │       │    │       └ <telebot.types.Chat object at 0x7fc7ed5dcf40>
-    │       │    └ <telebot.types.Message object at 0x7fc7ed5e1640>
-    │       └ <telebot.types.CallbackQuery object at 0x7fc7ed5e1610>
-    └ <function to_main at 0x7fc7ed5d6f70>
+  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/main.py", line 122, in get_text_messages
+    finance.fast_add(message.from_user.id, mt.split(', '))
+    │       │        │       │         │   │  └ <method 'split' of 'str' objects>
+    │       │        │       │         │   └ '35.6, try, dfsfsd, fdgd'
+    │       │        │       │         └ 720023902
+    │       │        │       └ <telebot.types.User object at 0x7ff4064dcfa0>
+    │       │        └ <telebot.types.Message object at 0x7ff4064e1e20>
+    │       └ <function fast_add at 0x7ff406187ee0>
+    └ <module 'finance' from '/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/finance.py'>
 
-  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/main.py", line 280, in to_main
-    db.update_param(chat_id, 'count_offset', 0)
-    │  │            └ 720023902
-    │  └ <function update_param at 0x7fc7ed2718b0>
-    └ <module 'db' from '/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/db.py'>
+  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/finance.py", line 123, in fast_add
+    parse[0] = int(parse[0])
+    │              └ ['35.6', 'try', 'dfsfsd', 'fdgd']
+    └ ['35.6', 'try', 'dfsfsd', 'fdgd']
 
-  File "/Users/psamodurov13/PycharmProjects/TG_bot_budget_cal/db.py", line 129, in update_param
-    cr.execute(f'''UPDATE users
-    │  └ <method 'execute' of 'sqlite3.Cursor' objects>
-    └ <sqlite3.Cursor object at 0x7fc7ed5b69d0>
-
-sqlite3.OperationalError: no such table: users
+ValueError: invalid literal for int() with base 10: '35.6'
