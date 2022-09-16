@@ -8,6 +8,7 @@ from loguru import logger
 import json
 import ast
 import os
+import time
 
 logger.add('debug.log', format='{time} {level} {message}', level='DEBUG', rotation='10 KB', compression='zip')
 
@@ -133,7 +134,6 @@ def get_text_messages(message):
 def add_operation(chat_id, calldata):
     # Ввод суммы новой операции
     message = bot.send_message(chat_id, 'Введите сумму.', reply_markup=keyboard_to_main)
-
     bot.register_next_step_handler(message, add_operation_currency, calldata)
 
 
@@ -407,4 +407,10 @@ def callback_worker(call):
         bot.send_document(call.message.chat.id, document=open(file_name, 'rb'), reply_markup=keyboard_to_main)
 
 
-bot.polling(none_stop=True, interval=0)
+if __name__ == '__main__':
+    while True:
+        try:
+            bot.polling(none_stop=True, interval=0)
+        except Exception as e:
+            time.sleep(3)
+            print(e)

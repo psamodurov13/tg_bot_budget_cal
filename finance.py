@@ -6,8 +6,12 @@ import xlsxwriter
 from datetime import date
 
 data = requests.get('https://www.cbr-xml-daily.ru/daily_json.js').json()
-data2 = requests.get('https://theforexapi.com/api/latest').json()
-all_currency = list(data['Valute'].keys() & data2['rates'].keys()) + ['RUB']
+try:
+    data2 = requests.get('https://theforexapi.com/api/latest').json()
+    all_currency = list(data['Valute'].keys() & data2['rates'].keys()) + ['RUB']
+except Exception:
+    data2 = data
+    all_currency = list(data['Valute'].keys()) + ['RUB']
 
 
 # Функция вывода всех операций определенной группы
@@ -74,28 +78,32 @@ def show_operations_interval(chat_id, interval):
 
 # Функция конвертации во все валюты
 def convert_to_one(chat_id, choice_currency):
-    currency_db = [str(*i) for i in db.fetch_unique_param(chat_id, 'operation_currency')]
-    result = 0.0
-    convert = CurrencyRates()
-    type_operation = db.fetch_param(chat_id, 'type_operation')
-    for index in range(len(currency_db)):
-        try:
-            sum_cur = str(abs(*db.sum_price(chat_id, currency_db[index], type_operation)))
-        except TypeError:
-            sum_cur = '0'
-        if currency_db[index] == choice_currency:
-            result += float(sum_cur)
-        else:
-            if choice_currency == 'RUB':
-                result += float(sum_cur) * data['Valute'][currency_db[index]]['Value'] / \
-                          data['Valute'][currency_db[index]]['Nominal']
+    try:
+        currency_db = [str(*i) for i in db.fetch_unique_param(chat_id, 'operation_currency')]
+        result = 0.0
+        convert = CurrencyRates()
+        type_operation = db.fetch_param(chat_id, 'type_operation')
+        for index in range(len(currency_db)):
+            try:
+                sum_cur = str(abs(*db.sum_price(chat_id, currency_db[index], type_operation)))
+            except TypeError:
+                sum_cur = '0'
+            if currency_db[index] == choice_currency:
+                result += float(sum_cur)
             else:
-                if currency_db[index] == 'RUB':
-                    result += float(sum_cur) / data['Valute'][choice_currency]['Value'] * \
-                              data['Valute'][choice_currency]['Nominal']
+                if choice_currency == 'RUB':
+                    result += float(sum_cur) * data['Valute'][currency_db[index]]['Value'] / \
+                              data['Valute'][currency_db[index]]['Nominal']
                 else:
-                    result += convert.convert(currency_db[index], choice_currency, float(sum_cur))
-    db.update_param(chat_id, 'type_operation', '')
+                    if currency_db[index] == 'RUB':
+                        result += float(sum_cur) / data['Valute'][choice_currency]['Value'] * \
+                                  data['Valute'][choice_currency]['Nominal']
+                    else:
+                        result += convert.convert(currency_db[index], choice_currency, float(sum_cur))
+        db.update_param(chat_id, 'type_operation', '')
+    except Exception:
+        result = 'Ошибка, попробуй позже, либо воспользуйся этим ' \
+                 'https://www.oanda.com/currency-converter/ru/?from=USD&to=RUB&amount=1'
     return result
 
 
