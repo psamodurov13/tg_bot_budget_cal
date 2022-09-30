@@ -106,6 +106,7 @@ def convert_to_one(chat_id, choice_currency):
     return result
 
 
+# Создание выгрузки
 def send_excel(chat_id, groups_list='', limit=5):
     if groups_list:
         all_op = ([('цена', 'валюта', 'назначение', 'статья', 'дата', 'id')]
@@ -126,6 +127,7 @@ def send_excel(chat_id, groups_list='', limit=5):
     return file_name
 
 
+# Быстрое добавление операции
 def fast_add(chat_id, parse):
     try:
         parse[0] = float(parse[0])

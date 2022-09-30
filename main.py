@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import telebot
 import finance
 from telebot import types
@@ -12,8 +13,8 @@ import time
 
 logger.add('debug.log', format='{time} {level} {message}', level='DEBUG', rotation='10 KB', compression='zip')
 
-token = os.getenv("TOKEN")
-bot = telebot.TeleBot(token)
+# token = os.getenv("TOKEN")
+bot = telebot.TeleBot('5502805436:AAF83iukDBx0h4XXaeVLesFduwsxOFbETNw')
 # Общая кнопка возврата в главное меню
 keyboard_to_main = types.InlineKeyboardMarkup()
 key_to_main = types.InlineKeyboardButton(text='В главное меню', callback_data='to_main')
@@ -130,13 +131,11 @@ def main():
         else:
             bot.send_message(message.from_user.id, 'Я тебя не  понимаю, напиши /help ')
 
-
     # Функции сбора информации для добавления новой операции
     def add_operation(chat_id, calldata):
         # Ввод суммы новой операции
         message = bot.send_message(chat_id, 'Введите сумму.', reply_markup=keyboard_to_main)
         bot.register_next_step_handler(message, add_operation_currency, calldata)
-
 
     def add_operation_currency(message, calldata):
         if message.text.replace('.', '').isdigit():
@@ -155,7 +154,6 @@ def main():
             bot.send_message(message.from_user.id, 'Введите валюту.', reply_markup=keyboard_choice_currency)
         else:
             bot.send_message(message.from_user.id, 'Возникла ошибка', reply_markup=keyboard_main)
-
 
     def add_currency(chat_id):
         keyboard_add_currency = types.InlineKeyboardMarkup()
@@ -194,7 +192,7 @@ def main():
         # Построение календаря
         calendar, step = DetailedTelegramCalendar().build()
         bot.send_message(chat_id,
-                         f"Выберите {LSTEP[step]}",
+                         f'Выберите {LSTEP[step]}',
                          reply_markup=calendar)
 
 
@@ -231,7 +229,6 @@ def main():
                     db.update_param(c.message.chat.id, 'interval', interval)
                     db.update_param(c.message.chat.id, 'callendar_param', '')
 
-
     def create_finance(chat_id):
         # Создание операции
         new_exe = json.loads(db.fetch_param(chat_id, 'new_exe').replace('\'', '"'))
@@ -248,16 +245,13 @@ def main():
         db.update_param(chat_id, 'operation_date', '')
         db.update_param(chat_id, 'callendar_param', '')
 
-
     def budget_menu(chat_id):
         # Меню пункта "бюджет"
         bot.send_message(chat_id, 'Что вы хотите сделать?', reply_markup=keyboard)
 
-
     def show_operations_menu(chat_id):
         # Меню пункта "просмотр операций"
         bot.send_message(chat_id, 'Что дальше?', reply_markup=keyboard_operations_interval)
-
 
     def show_operations_menu_without_next(chat_id):
         # Меню пункта "просмотр операций без next"
@@ -267,7 +261,6 @@ def main():
         bot.send_message(chat_id, 'Выбери нужный раздел',
                          reply_markup=keyboard_main)
         db.update_param(chat_id, 'count_offset', 0)
-
 
     # Обработчик нажатий на кнопки
     @bot.callback_query_handler(func=lambda call: True)
@@ -293,7 +286,7 @@ def main():
             else:
                 show_operations_menu(call.message.chat.id)
 
-
+        # Показать следующие операции
         if call.data == 'next':
             db.update_param(call.message.chat.id, 'count_offset', db.fetch_param(call.message.chat.id, 'count_offset') + 5)
             msg = finance.show_operations(call.message.chat.id, db.fetch_param(call.message.chat.id, 'count_offset'))
@@ -305,22 +298,26 @@ def main():
                 show_operations_menu_without_next(call.message.chat.id)
                 db.update_param(call.message.chat.id, 'count_offset', 0)
 
+        # Выбрать интервал дат
         if call.data == 'interval':
             db.update_param(call.message.chat.id, 'callendar_param', 'interv')
             interval = {}
             db.update_param(call.message.chat.id, 'interval', interval)
             start_callendar(call.message.chat.id)
 
+        # Просмотр групп
         if call.data == 'show_group':
-            bot.send_message(call.message.chat.id, 'Статьи расходов. Для просмотра разходов, нажмите кнопку',
+            bot.send_message(call.message.chat.id, 'Статьи расходов. Для просмотра расходов, нажмите кнопку',
                              reply_markup=show_categories(call.message.chat.id, 'show_group_'))
 
+        # Просмотр записей группы
         if 'show_group_' in call.data:
             msg = finance.show_group(call.message.chat.id, call.data[11:])
             # Отправляем текст в Телеграм
             bot.send_message(call.message.chat.id, msg)
             budget_menu(call.message.chat.id)
 
+        # Просмотр общей сводки
         if call.data == 'show_all_price' or call.data == 'show_all_plus_price':
             if call.data == 'show_all_price':
                 msg = 'Всего потрачено: \n' + finance.show_all_price(call.message.chat.id, "< 0")
@@ -333,6 +330,7 @@ def main():
             bot.send_message(call.message.chat.id, 'Хотите узнать полные расходы в одной валюте?',
                              reply_markup=keyboard_convert)
 
+        # Конвертация в одну валюту
         if call.data == 'convert_to_one':
             currency_db = [str(*i) for i in db.fetch_unique_param(call.message.chat.id, 'operation_currency')]
             # Создаем клавиатуру для вывода валют
@@ -344,6 +342,7 @@ def main():
             bot.send_message(call.message.chat.id, 'В какой валюте показать общий расход?',
                              reply_markup=keyboard_choice_currency)
 
+        # Выбор валюты для конвертации
         if 'choice_curr_' in call.data:
             choice_currency = call.data[12:]
             msg = str(round(finance.convert_to_one(call.message.chat.id, choice_currency))) + ' ' + choice_currency
@@ -351,11 +350,13 @@ def main():
             bot.send_message(call.message.chat.id, msg)
             budget_menu(call.message.chat.id)
 
+        # Выбор валюты операции
         if 'oper_curr_' in call.data:
             new_exe = json.loads(db.fetch_param(call.message.chat.id, 'new_exe').replace('\'', '"'))
             new_exe['operation_currency'] = call.data[10:]
             add_operation_name(call.message.chat.id, new_exe)
 
+        # Добавление валюты
         if call.data == 'add_currency':
             add_currency(call.message.chat.id)
 
@@ -364,21 +365,26 @@ def main():
             new_exe['operation_currency'] = call.data[9:]
             add_operation_name(call.message.chat.id, new_exe)
 
+        # На главную
         if call.data == 'to_main':
             to_main(call.message.chat.id)
 
+        # Дата операции - сегодня
         if call.data == 'today':
             db.update_param(call.message.chat.id, 'operation_date', date.today())
             create_finance(call.message.chat.id)
 
+        # Дата операции - вчера
         if call.data == 'yesterday':
             db.update_param(call.message.chat.id, 'operation_date', date.today() - timedelta(days=1))
             create_finance(call.message.chat.id)
 
+        # Дата операции - другое
         if call.data == 'other_date':
             db.update_param(call.message.chat.id, 'callendar_param', 'new_op')
             start_callendar(call.message.chat.id)
 
+        # Скачать выгрузку
         if call.data == 'download':
             bot.send_message(call.message.chat.id, 'Выберите тип отчета',
                              reply_markup=keyboard_download_excel)
