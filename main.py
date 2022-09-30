@@ -13,8 +13,8 @@ import time
 
 logger.add('debug.log', format='{time} {level} {message}', level='DEBUG', rotation='10 KB', compression='zip')
 
-# token = os.getenv("TOKEN")
-bot = telebot.TeleBot('5502805436:AAF83iukDBx0h4XXaeVLesFduwsxOFbETNw')
+token = os.getenv("TOKEN")
+bot = telebot.TeleBot('token')
 # Общая кнопка возврата в главное меню
 keyboard_to_main = types.InlineKeyboardMarkup()
 key_to_main = types.InlineKeyboardButton(text='В главное меню', callback_data='to_main')
