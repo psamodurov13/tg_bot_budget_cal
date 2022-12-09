@@ -13,8 +13,10 @@ except Exception:
     all_currency = list(data['Valute'].keys()) + ['RUB']
 
 
-# Функция вывода всех операций определенной группы
 def show_group(chat_id, search_group):
+    '''
+    Function display all operations of selected group
+    '''
     result_show_group = f'Все расходы по статье - {search_group} \n'
     group_operations_db = db.fetchall(chat_id, f'WHERE operation_group = "{search_group}"')
     for i in group_operations_db:
@@ -23,8 +25,10 @@ def show_group(chat_id, search_group):
     return result_show_group
 
 
-# Функция вывода всех операций
 def show_operations(chat_id, count_offset=0):
+    '''
+    Function display all operations
+    '''
     operations = find_operations(chat_id, count_offset)
     if count_offset == 0 and len(operations[0]) != 0:
         result_show_operations = 'Последние 5 операций: \n'
@@ -46,8 +50,10 @@ def find_operations(chat_id, count_offset):
     return [operations_db, finded_operations]
 
 
-# Функция вывода суммы всех операций
 def show_all_price(chat_id, type_operation=''):
+    '''
+    Function display total amount of all operations
+    '''
     result_show_all_price = ''
     currency_db = [str(*i) for i in db.fetch_unique_param(chat_id, 'operation_currency')]
     for currency in currency_db:
@@ -64,6 +70,9 @@ def show_all_price(chat_id, type_operation=''):
 
 # Функция вывода операций определенного интервала
 def show_operations_interval(chat_id, interval):
+    '''
+    Function display operations from selected range
+    '''
     result = f'Операции с {interval["start"]} по {interval["end"]}: \n'
     operations_interval_list = db.operations_interval(chat_id, interval)
     if len(operations_interval_list) == 0:
@@ -77,6 +86,9 @@ def show_operations_interval(chat_id, interval):
 
 # Функция конвертации во все валюты
 def convert_to_one(chat_id, choice_currency):
+    '''
+    Function convert amount to other currencies
+    '''
     try:
         currency_db = [str(*i) for i in db.fetch_unique_param(chat_id, 'operation_currency')]
         result = 0.0
@@ -106,8 +118,10 @@ def convert_to_one(chat_id, choice_currency):
     return result
 
 
-# Создание выгрузки
 def send_excel(chat_id, groups_list='', limit=5):
+    '''
+    Function create file for download
+    '''
     if groups_list:
         all_op = ([('цена', 'валюта', 'назначение', 'статья', 'дата', 'id')]
                   + db.fetchall(chat_id, f'WHERE operation_group = "{groups_list}"', offset='', limit=''))
@@ -127,8 +141,10 @@ def send_excel(chat_id, groups_list='', limit=5):
     return file_name
 
 
-# Быстрое добавление операции
 def fast_add(chat_id, parse):
+    '''
+    Function for quick add operation
+    '''
     try:
         parse[0] = float(parse[0])
         parse[1] = parse[1].upper()
